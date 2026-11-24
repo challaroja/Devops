@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TransitDeals - Metro Ticketing Portal</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- QRCode.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        @media print {
+            body * { visibility: hidden; }
+            #printable-ticket, #printable-ticket * { visibility: visible; }
+            #printable-ticket { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800">
+
+    <!-- Header Section -->
+    <header class="bg-indigo-600 text-white shadow-md py-4 px-6 mb-6 no-print">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold flex items-center gap-2">
+                    🚇 TransitDeals Metro Portal
+                </h1>
+                <p class="text-xs text-indigo-200 mt-0.5">Mobile App & Station Counter Ticketing with Kiosk Sync</p>
+            </div>
+            <div>
+                <a href="/kiosk" class="bg-indigo-700 hover:bg-indigo-800 text-indigo-100 px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                    🏪 Go to Kiosk Screen
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 pb-12">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- SECTION 1: BOOKING FORM -->
+            <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 no-print flex flex-col justify-between">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900 mb-4 pb-2 border-b">1. Issue Metro Ticket</h2>
+                    
+                    <!-- Terminal Mode -->
+                    <div class="mb-4">
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Select Terminal Mode</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" id="mode-mobile" onclick="setMode('Mobile App')" class="py-2 px-3 text-sm font-medium rounded-lg border border-indigo-600 bg-indigo-50 text-indigo-700 transition">📱 Mobile App</button>
+                            <button type="button" id="mode-counter" onclick="setMode('Station Counter')" class="py-2 px-3 text-sm font-medium rounded-lg border border-slate-200 bg-white text-slate-600 transition">🏢 Station Counter</button>
+                        </div>
+                    </div>
+
+                    <!-- Stations -->
+                    <div class="mb-3">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">From Station</label>
+                        <input type="text" id="source" list="stations-list" oninput="updateFare()" placeholder="e.g. Ameerpet" 
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">To Station</label>
+                        <input type="text" id="destination" list="stations-list" oninput="updateFare()" placeholder="e.g. HITEC City" 
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+
+                    <datalist id="stations-list">
+                        <option value="Ameerpet"><option value="HITEC City"><option value="Madhapur"><option value="Miyapur"><option value="Secunderabad"><option value="LB Nagar">
+                    </datalist>
+
+                    <!-- Mobile Number (Dynamic Label/Visibility based on Mode) -->
+                    <div class="mb-3" id="mobile-field-box">
+                        <label class="block text-sm font-medium text-slate-700 mb-1" id="mobile-label">Passenger Mobile Number</label>
+                        <input type="tel" id="mobile" placeholder="10-digit number" value="9876543210" 
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+
+                    <!-- Payment Method -->
+                    <!-- <div class="mb-4" id="payment-box">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Payment Method</label>
+                        <select id="payment" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+                            <option>Online UPI (GPay / PhonePe)</option>
+                            <option>Credit / Debit Card</option>
+                            <option>Metro Smart Card</option>
+                        </select>
+                    </div> -->
+                       <!-- Payment Method -->
+                    <div class="mb-4" id="payment-box">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Payment Method</label>
+                        <select id="payment" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+                            <option value="No Payment">No Payment / Free Testing</option>
+                            <option value="Online UPI">Online UPI (GPay / PhonePe)</option>
+                            <option value="Credit / Debit Card">Credit / Debit Card</option>
+                            <option value="Metro Smart Card">Metro Smart Card</option>
+                        </select>
+                    </div>
+
+                    <!-- Fare Display -->
+                    <div class="bg-slate-50 p-3 rounded-xl flex items-center justify-between border border-slate-100 mb-4">
+                        <span class="text-sm font-medium text-slate-600">Ticket Fare:</span>
+                        <span class="text-xl font-black text-indigo-600" id="fare-display">₹0 <span class="text-xs text-emerald-600 font-normal">(Free Testing)</span></span>
+                    </div>
+                </div>
+
+                <button onclick="bookTicket()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow transition">
+                    Pay & Generate Metro Ticket
+                </button>
+            </section>
+
+
+            <!-- SECTION 2: TICKET RECEIPT & ACTIONS -->
+            <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900 mb-3 pb-2 border-b">2. Ticket Output & Delivery</h2>
+                    
+                    <div id="placeholder-text" class="text-slate-400 italic text-sm text-center py-16">
+                        Generate a ticket to view digital QR, download options, or counter print/WhatsApp tools.
+                    </div>
+
+                    <!-- Printable / Viewable Ticket Receipt -->
+                    <div id="printable-ticket" class="hidden bg-slate-50 p-5 rounded-xl border border-slate-300 space-y-3 font-sans">
+                        <div class="text-center pb-2 border-b border-dashed border-slate-300 bg-white p-2 rounded">
+                            <h4 class="font-black text-indigo-600 text-base">HYDERABAD METRO RAIL</h4>
+                            <p class="text-[10px] text-slate-500">TransitDeals Integrated Ticketing System</p>
+                        </div>
+                        <div class="text-xs space-y-1 bg-white p-3 rounded border">
+                            <div class="flex justify-between"><span>Ticket No:</span> <strong id="r-ticket" class="font-mono text-indigo-700"></strong></div>
+                            <div class="flex justify-between"><span>Journey:</span> <strong id="r-route"></strong></div>
+                            <div class="flex justify-between"><span>Mode:</span> <strong id="r-mode"></strong></div>
+                            <div class="flex justify-between"><span>Fare Paid:</span> <strong id="r-fare"></strong></div>
+                            <div class="flex justify-between"><span>Date:</span> <strong id="r-time"></strong></div>
+                        </div>
+                        <div class="bg-indigo-50 p-2.5 rounded-lg border border-indigo-100 text-xs">
+                            <span class="bg-emerald-200 text-emerald-900 font-bold px-1.5 py-0.5 rounded text-[10px]" id="r-brand"></span>
+                            <div class="font-bold text-slate-800 mt-1" id="r-offer"></div>
+                            <div class="mt-1">Coupon Code: <strong id="r-coupon" class="font-mono bg-white px-1.5 py-0.5 rounded border"></strong></div>
+                        </div>
+                        <div class="flex flex-col items-center pt-2 bg-white p-3 rounded border">
+                            <div id="qrcode" class="p-1 bg-white border rounded"></div>
+                            <span class="text-[10px] text-slate-500 mt-1">Scan at Gate Entry & Vending Kiosk</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Action Buttons Based on Mode -->
+                <div id="action-buttons-box" class="mt-4 hidden space-y-2">
+                    <!-- Mobile App Action -->
+                    <div id="mobile-actions" class="hidden">
+                        <button onclick="alert('Ticket downloaded successfully as Image/PDF!')" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition flex items-center justify-center gap-2">
+                            📥 Download & View Ticket
+                        </button>
+                    </div>
+
+                    <!-- Station Counter Actions -->
+                    <div id="counter-actions" class="hidden space-y-2">
+                        <button onclick="window.print()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm transition flex items-center justify-center gap-2">
+                            🖨️ Print Physical Paper Ticket
+                        </button>
+                        <button onclick="sendToWhatsApp()" class="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl text-sm transition flex items-center justify-center gap-2">
+                            💬 Send QR to WhatsApp
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- JavaScript Logic -->
+    <script>
+        let currentMode = "Mobile App";
+        let lastGeneratedTicket = null;
+
+        function setMode(mode) {
+            currentMode = mode;
+            const mBtn = document.getElementById('mode-mobile');
+            const cBtn = document.getElementById('mode-counter');
+            
+            if (mode === "Mobile App") {
+                mBtn.className = "py-2 px-3 text-sm font-medium rounded-lg border border-indigo-600 bg-indigo-50 text-indigo-700 transition";
+                cBtn.className = "py-2 px-3 text-sm font-medium rounded-lg border border-slate-200 bg-white text-slate-600 transition";
+            } else {
+                cBtn.className = "py-2 px-3 text-sm font-medium rounded-lg border border-indigo-600 bg-indigo-50 text-indigo-700 transition";
+                mBtn.className = "py-2 px-3 text-sm font-medium rounded-lg border border-slate-200 bg-white text-slate-600 transition";
+            }
+            updateActionButtonsView();
+        }
+
+        function updateFare() {
+            const src = document.getElementById('source').value.trim();
+            const dest = document.getElementById('destination').value.trim();
+            const fareDisp = document.getElementById('fare-display');
+
+            if (src === "Ameerpet" && dest === "HITEC City") {
+                fareDisp.innerHTML = `₹0 <span class="text-xs text-emerald-600 font-normal">(Free Testing)</span>`;
+            } else if (src && dest) {
+                fareDisp.innerHTML = `₹30 <span class="text-xs text-indigo-600 font-normal"></span>`;
+            } else {
+                fareDisp.innerHTML = `₹0`;
+            }
+        }
+
+        function updateActionButtonsView() {
+            if (!lastGeneratedTicket) return;
+            document.getElementById('action-buttons-box').classList.remove('hidden');
+            if (currentMode === "Mobile App") {
+                document.getElementById('mobile-actions').classList.remove('hidden');
+                document.getElementById('counter-actions').classList.add('hidden');
+            } else {
+                document.getElementById('mobile-actions').classList.add('hidden');
+                document.getElementById('counter-actions').classList.remove('hidden');
+            }
+        }
+
+        async function bookTicket() {
+            const source = document.getElementById('source').value.trim();
+            const destination = document.getElementById('destination').value.trim();
+            const mobile = document.getElementById('mobile').value.trim();
+            const payment = document.getElementById('payment').value;
+
+            if (!source || !destination) {
+                alert('Please enter From and To stations!');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/book-ticket', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        source: source,
+                        destination: destination,
+                        booking_mode: currentMode,
+                        payment_method: payment,
+                        mobile_number: mobile
+                    })
+                });
+
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    lastGeneratedTicket = data.ticket;
+                    const t = lastGeneratedTicket;
+                    
+                    // Populate receipt fields
+                    document.getElementById('r-ticket').innerText = t.ticket_number;
+                    document.getElementById('r-route').innerText = `${t.source} ➔ ${t.destination}`;
+                    document.getElementById('r-mode').innerText = t.booking_mode;
+                    document.getElementById('r-fare').innerText = `₹${t.fare}`;
+                    document.getElementById('r-time').innerText = t.booked_at;
+                    document.getElementById('r-brand').innerText = t.brand;
+                    document.getElementById('r-offer').innerText = t.brand_offer;
+                    document.getElementById('r-coupon').innerText = t.coupon_code;
+
+                    // Show receipt, hide placeholder
+                    document.getElementById('printable-ticket').classList.remove('hidden');
+                    document.getElementById('placeholder-text').classList.add('hidden');
+
+                    // Generate QR Code
+                    document.getElementById("qrcode").innerHTML = "";
+                    new QRCode(document.getElementById("qrcode"), {
+                        text: t.ticket_number,
+                        width: 90,
+                        height: 90
+                    });
+
+                    updateActionbuttonsView();
+
+                } else {
+                    alert('Error: ' + (data.detail || 'Failed'));
+                }
+            } catch (err) {
+                alert('Server connection failed!');
+            }
+        }
+
+        function sendToWhatsApp() {
+            if (!lastGeneratedTicket) return;
+            const mob = document.getElementById('mobile').value.trim();
+            if (mob.length !== 10) {
+                alert('Please enter a valid 10-digit mobile number to send WhatsApp message!');
+                return;
+            }
+            const msg = `Hello! Here is your Hyderabad Metro Ticket No: ${lastGeneratedTicket.ticket_number} for journey from ${lastGeneratedTicket.source} to ${lastGeneratedTicket.destination}. Free Coupon Code: ${lastGeneratedTicket.coupon_code} (${lastGeneratedTicket.brand_offer}). Enjoy your ride!`;
+            const url = `https://wa.me/91${mob}?text=${encodeURIComponent(msg)}`;
+            window.open(url, '_blank');
+        }
+    </script>
+</body>
+</html>
