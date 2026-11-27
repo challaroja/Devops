@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transit-deals-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: transit-deals
+  template:
+    metadata:
+      labels:
+        app: transit-deals
+    spec:
+      containers:
+      - name: transit-deals
+        image: transit-deals-app:latest
+        imagePullPolicy: IfNotPresent # Local Docker image use cheyadaniki idi important
+        ports:
+        - containerPort: 8001
