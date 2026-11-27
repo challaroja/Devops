@@ -1,0 +1,13 @@
+---
+- name: Automate TransitDeals Deployment & Verification
+  hosts: local
+  become: false
+  tasks:
+    - name: Verify Kubernetes Deployment Status
+      ansible.builtin.command: kubectl get deployment transit-deals-deployment
+      register: k8s_status
+      changed_when: false
+
+    - name: Display Deployment Output
+      ansible.builtin.debug:
+        var: k8s_status.stdout_lines

@@ -3,7 +3,8 @@ kind: Deployment
 metadata:
   name: transit-deals-deployment
 spec:
-  replicas: 1
+  replicas: 3
+  # replicas: 1
   selector:
     matchLabels:
       app: transit-deals
@@ -15,6 +16,6 @@ spec:
       containers:
       - name: transit-deals
         image: transit-deals-app:latest
-        imagePullPolicy: IfNotPresent # Local Docker image use cheyadaniki idi important
+        imagePullPolicy: IfNotPresent 
         ports:
         - containerPort: 8001
